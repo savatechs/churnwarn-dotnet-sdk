@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ChurnWarn.Sdk</RootNamespace>
+    <AssemblyName>ChurnWarn.Sdk</AssemblyName>
+    <!-- Ships the XML doc comments in the NuGet package so consumers get IntelliSense. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- CS1591: don't fail the build on undocumented public members (constants classes). -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <!-- NuGet package metadata -->
+    <PackageId>ChurnWarn.Sdk</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>savatechs</Authors>
+    <Company>savatechs</Company>
+    <Product>ChurnWarn SDK</Product>
+    <Description>Async HTTP client for ChurnWarn Gateway event APIs. Non-blocking background capture with batching, redaction, and retry.</Description>
+    <PackageTags>churn;analytics;telemetry;events;churnwarn</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/savatechs/churnwarn-dotnet-sdk</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/savatechs/churnwarn-dotnet-sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

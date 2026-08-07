@@ -1,0 +1,66 @@
+name: Publish to NuGet
+
+# Lives in the standalone churnwarn-dotnet-sdk repo (mirrored from the private monorepo).
+# GitHub-hosted runners are free & unlimited for public repos, so runs-on: ubuntu-latest.
+#
+# Release by pushing a version tag whose version matches the csproj <Version>:
+#   git tag v0.1.1 && git push origin v0.1.1
+#
+# Auth is Trusted Publishing (OIDC) — no long-lived API key is stored. GitHub mints a
+# short-lived signed token for this workflow, nuget.org validates it against a policy you
+# configure once, and returns a temporary API key (valid 1 hour, single use).
+#
+# One-time setup on nuget.org (Account -> Trusted Publishing -> add policy):
+#   Repository Owner: savatechs
+#   Repository:       churnwarn-dotnet-sdk
+#   Workflow File:    publish.yml        <- filename only, no .github/workflows/ path
+#   Environment:      (leave blank)
+# The policy is keyed to this exact workflow filename; renaming this file breaks it.
+#
+# Required repo secret: NUGET_USER  (your nuget.org profile name, NOT your email address).
+# This is an identifier rather than a credential, but it is kept as a secret for hygiene.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write   # required: lets GitHub issue the OIDC token NuGet/login exchanges
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Verify tag matches csproj version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' ChurnWarn.Sdk.csproj | head -1)"
+          echo "tag=$TAG_VERSION csproj=$PKG_VERSION"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag ($TAG_VERSION) does not match csproj <Version> ($PKG_VERSION). Bump the version and re-tag."
+            exit 1
+          fi
+
+      - name: Pack
+        run: dotnet pack -c Release -o "$RUNNER_TEMP/nupkg"
+
+      # Requested immediately before the push: the temporary key expires after 1 hour.
+      - name: NuGet login (OIDC -> temporary API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Publish to NuGet
+        run: |
+          dotnet nuget push "$RUNNER_TEMP"/nupkg/*.nupkg \
+            --api-key "$NUGET_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+        env:
+          NUGET_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
